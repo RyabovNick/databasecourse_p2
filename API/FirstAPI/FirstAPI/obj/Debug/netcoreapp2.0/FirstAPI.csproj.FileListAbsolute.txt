@@ -1,0 +1,11 @@
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\bin\Debug\netcoreapp2.0\FirstAPI.deps.json
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\bin\Debug\netcoreapp2.0\FirstAPI.runtimeconfig.json
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\bin\Debug\netcoreapp2.0\FirstAPI.runtimeconfig.dev.json
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\bin\Debug\netcoreapp2.0\FirstAPI.dll
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\obj\Debug\netcoreapp2.0\FirstAPI.csprojAssemblyReference.cache
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\obj\Debug\netcoreapp2.0\FirstAPI.csproj.CoreCompileInputs.cache
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\obj\Debug\netcoreapp2.0\FirstAPI.AssemblyInfoInputs.cache
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\obj\Debug\netcoreapp2.0\FirstAPI.AssemblyInfo.cs
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\bin\Debug\netcoreapp2.0\FirstAPI.pdb
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\obj\Debug\netcoreapp2.0\FirstAPI.dll
+D:\Projects\unidubnadb\API\FirstAPI\FirstAPI\obj\Debug\netcoreapp2.0\FirstAPI.pdb

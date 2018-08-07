@@ -2,26 +2,21 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using FirstAPI.Models;
 
 namespace FirstAPI.Controllers
 {
     [Route("api/[controller]")]
     public class ValuesController : Controller
     {
+        DataAccessLayer obj = new DataAccessLayer();
         // GET api/values
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IEnumerable<Students> Get()
         {
-            var connection = new System.Data.SqlClient.SqlConnection(@"server=127.0.0.1, 3306;persistsecurityinfo=True;Database=sportsstore;user=root;password=Qwerty789#");
-            string sql = "Select * FROM products";
-
-            var productsList = connection.Query(sql).ToList();
-
-            Console.WriteLine(productsList);
-
-            return new string[] { productsList.ToString() };
+            return obj.GetStudents();
         }
 
         // GET api/values/5
@@ -35,6 +30,7 @@ namespace FirstAPI.Controllers
         [HttpPost]
         public void Post([FromBody]string value)
         {
+
         }
 
         // PUT api/values/5

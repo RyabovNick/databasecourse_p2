@@ -8,6 +8,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using FirstAPI.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace FirstAPI
 {
@@ -23,6 +25,10 @@ namespace FirstAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //Подключение к БД (в данном случае MySQL)
+            //И использование models DbContext
+            services.AddDbContext<StudentsDbContext>(options =>
+                options.UseMySql(Configuration["ConnectionStrings:DefaultConnection"]));
             services.AddMvc();
         }
 

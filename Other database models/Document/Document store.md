@@ -1,5 +1,0 @@
-# Document store
-
-## JSON
-
-### MongoDB

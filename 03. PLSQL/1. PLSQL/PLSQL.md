@@ -100,6 +100,8 @@ END;
 
 ### Условия
 
+**IF:**
+
 ```
 IF THEN
 ELSIF
@@ -122,6 +124,20 @@ ELSE
 s:='Wrong t value';
 END IF;
 dbms_output.put_line(s);
+END;
+```
+
+**CASE:**
+
+```
+DECLARE
+  n number := 2;
+BEGIN
+	CASE n
+	   WHEN 1 THEN dbms_output.put_line('Its 1!!!');
+	   WHEN 2 THEN dbms_output.put_line('Its 2!!!');
+	   ELSE dbms_output.put_line('It isnt 1 or 2!!!');
+	END CASE;
 END;
 ```
 

@@ -73,3 +73,64 @@ end;
 ## Удаление процедур
 
 Для удаления процедуры необходимо выполнить оператор _DROP PROCEDURE_ имя_процедуры
+
+
+## Использование курсора в качестве параметра
+
+Oracle предоставляет возможность возвращать не только переменные заданных типов, пользовательских (TYPE, record), но и курсоры.
+
+Для такой ситуации необходимо добавить параметр `p_animset OUT SYS_REFCURSOR`
+
+В исполняемой секции необходимо открыть курсор
+
+```
+OPEN p_animset FOR
+  SELECT name, weight
+  FROM   animals;
+```
+
+Процедура готова, она возвращает все имена и вес животных, кладёт это в выходной параметр.
+
+Полный код выглядит так:
+
+```
+create or replace PROCEDURE get_animals (p_animset OUT SYS_REFCURSOR) AS 
+BEGIN 
+  OPEN p_animset FOR
+    SELECT name, weight
+    FROM   animals;
+END;
+```
+
+Далее как этот курсор использовать. Создадим ещё одну процедуру из которой можно запустить выше написанную (для удобства,  можно и анонимный блок):
+
+```
+create or replace procedure RUN_GET_ANIMALS
+AS
+l_cursor  SYS_REFCURSOR;
+l_name animals.name%TYPE;
+l_weight animals.weight%TYPE;
+```
+
+Тут объявляем курсор, который будет передан в вашенаписанную процедуру в качестве параметра, а также 2 переменные %TYPE. В данной задаче не получится использовать %rowtype, т.к. курсор пустой в том моменте, где мы объявляем переменные.
+
+```
+Begin
+get_animals(l_cursor);
+LOOP 
+    FETCH l_cursor
+    INTO  l_name, l_weight;
+    EXIT WHEN l_cursor%NOTFOUND;
+    DBMS_OUTPUT.PUT_LINE(l_name || ' | ' || l_weight);
+  END LOOP;
+  CLOSE l_cursor;
+end;
+```
+
+Тут запускаем процедуру, написанную ранее. Курсор уже открыт ранее, поэтому не получится использовать for. Построчно обрабатываем курсор и выводим на экран.
+
+
+
+
+
+

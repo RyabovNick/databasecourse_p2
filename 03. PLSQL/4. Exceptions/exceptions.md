@@ -33,7 +33,7 @@
 
 Обработчики исключений пишутся в конце базового блока (перед END) в секции исключений, которая начинается со служебного слова EXEPTION. Для обработки конкретного исключения указываются служебные слова WHEN, после которого идет название исключения, и слово THEN, после которого идет код обработчика указанного исключения. Если обработчиков исключений несколько, то для каждого из них используется такая же конструкция:
 
-```
+'''
 EXCEPTION
 WHEN имя_исключения_1 THEN
 операторы_обрабатывающие_исключение имя_исключения_1
@@ -41,50 +41,50 @@ WHEN имя_исключения_1 THEN
 операторы_обрабатывающие_исключение имя_исключения_2
 WHEN ...
 ]
-```
+'''
 
 **Пример** **1:**
 
-```
+'''
 DECLARE
  a number:=6;
  b number:=0;
 begin
  a:=a/b;
  b:=7;
- dbms_output.put_line(`b=`||b);
+ dbms_output.put_line('b='||b);
  EXCEPTION
  WHEN ZERO_DIVIDE THEN
-	 dbms_output.put_line(`Не  удалось  выполнить  операцию  деления`);
-	 dbms_output.put_line(`a=`||a||`, b=`||b);
+	 dbms_output.put_line('Не  удалось  выполнить  операцию  деления');
+	 dbms_output.put_line('a='||a||', b='||b);
 END;
-```
+'''
 
 При обработке исключений можно использовать две специальные переменные - SQLCODE и SQLERRM. Первая содержит код ошибки, вторая - имя и описание ошибки.
 
 **Пример 2:**
 
-```
+'''
 DECLARE
  a number:=6;
  b number:=0;
 begin
  a:=a/b;
  b:=7;
- dbms_output.put_line(`b=`||b);
+ dbms_output.put_line('b='||b);
  EXCEPTION
  WHEN ZERO_DIVIDE THEN
  DECLARE
 	 enum number:=SQLCODE;
 	 emsg varchar2(512):=SQLERRM;
  BEGIN
-	 dbms_output.put_line(`ORA Error NUM: `||enum);
-	 dbms_output.put_line(`ORA Error MSG: `||emsg);
-	 dbms_output.put_line(`a=`||a);
-	 dbms_output.put_line(`b=`||b);
+	 dbms_output.put_line('ORA Error NUM: '||enum);
+	 dbms_output.put_line('ORA Error MSG: '||emsg);
+	 dbms_output.put_line('a='||a);
+	 dbms_output.put_line('b='||b);
  END;
 END;
-```
+'''
 
 ## ПОЛЬЗОВАТЕЛЬСКИЕ ИСКЛЮЧЕНИЯ
 
@@ -96,7 +96,7 @@ END;
 
 **Пример 3:**
 
-```
+'''
 DECLARE
  quantity_must_positive EXCEPTION;
 BEGIN
@@ -107,10 +107,10 @@ END IF;
 ...
 EXCEPTION
  WHEN quantity_must_positive THEN
-  dbms_output.put_line(`Количество не может быть отрицательной величиной`);
+  dbms_output.put_line('Количество не может быть отрицательной величиной');
 ...
 END;
-```
+'''
 
 ## Оператор RAISE_APPLICATION_ERROR
 
@@ -118,18 +118,18 @@ END;
 
 Применение dbms_output.put_line резонно лишь в том случае, когда функция или процедура вызывается из среды SQL Plus, то есть для отладочных целей во время разработки. Во время же эксплуатации готовой системы все сообщения, выводящиеся на экран посредством dbms_output.put_line просто не дойдут до пользователя.
 
-## Пример 4:\*\*
+** Пример 4:**
 
-```
+'''
 DECLARE
  quantity_must_positive EXCEPTION;
 BEGIN
 ...
 IF (qiantity<0) then
-  RAISE_APPLICATION_ERROR(-20001,`Количество не может быть отрицательной величиной`);
+  RAISE_APPLICATION_ERROR(-20001,'Количество не может быть отрицательной величиной');
 END IF;
 ...
 END;
-```
+'''
 
 В этом случае, поскольку обработчика исключительной ситуации нет, управление никуда передаваться не будет, просто завершится выполение базового блока, в котором произошло исключение. В приложении, которое вызвало процедуру или функцию, содержащие данный базовый блок, можно обработать это исключение.

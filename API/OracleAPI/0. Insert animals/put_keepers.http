@@ -1,0 +1,7 @@
+PUT https://apex.oracle.com/pls/apex/for_victory1/zoo/keepers/67 HTTP/1.1
+Content-Type: application/json
+
+{
+    "patronymic": "valentine",
+    "experience" : 5
+}

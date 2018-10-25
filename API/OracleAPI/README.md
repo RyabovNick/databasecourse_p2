@@ -2,9 +2,9 @@
 
 Oracle предоставляет возможности легкого создания API. Подобное решение можно использовать в учебных целях.
 
-О том, что такое API можно почитать тут (до части Tutorial, в нем в кратце описано как сделать API собственными средствами) https://bitbucket.org/For_Victory/unidubnadb/src/master/API/API.md
+О том, что такое API можно почитать тут (до части Tutorial, в нем в кратце описано как сделать API собственными средствами) [API](https://bitbucket.org/For_Victory/unidubnadb/src/master/API/API.md)
 
-# Инструкция
+## Инструкция
 
 SQL Workshop -> RESTful Services
 

@@ -45,3 +45,22 @@ where id = :id
 Далее можно создать POST, PUT, DELETE API. Их отличие в том, что их можно реализовать только при помощи PL/SQL.
 
 Например, создайте к созданному Template animals Handler POST.
+
+### PUT
+
+Для создания PUT запроса есть единственный возможный Source Type - PL/SQL.
+
+Для описания инструкций используется анонимный блок, т.е.
+
+```
+begin
+...
+end;
+```
+
+Если необходимо, то зона Declare. Можно использовать ранее написанные функции, процедуры, пакеты.
+
+Важная особенность этой части - использование параметров:
+
+1. name: X-APEX-FORWARD (стандартное название переменной), bind variable: location (можете назвать её как-нибудь по-другому), source type: Http Header, Access method: OUT, Data Type: String. Этот параметр возвращает результат запроса клиенту (в JSON формате).
+2. name: X-APEX-STATUS-CODE, bind variable: status, source type: Http Header, Access method: OUT, Data Type: Integer. Этот параметр возвращает статус запроса (обычный HTTP код, можно найти. Успешно - 200)

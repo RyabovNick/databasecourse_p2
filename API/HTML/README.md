@@ -25,45 +25,16 @@
 
 ```HTML
 <html>
-
-
-
     <body onload="myFunction()">
-
         <h1>Заголовок</h1>
-
-
-
         <p>Абзац</p>
-
-
-
         <select id="mySelect">
-
             <option>One</option>
-
             <option>Two</option>
-
             <option>Three</option>
-
         </select>
-
-
-
         <input type="text">
-
-
-
         <button onclick="myFunction2()">Button</button>
-
-
-
     </body>
-
-
-
 </html>
-
-
-
 ```

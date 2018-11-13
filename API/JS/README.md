@@ -124,3 +124,58 @@ xhr.send(data);
 ### DELETE
 
 Аналогичен GET, только не забудьте поменять метод при `open` и API должен быть с параметром для одного элемента.
+
+## JS Forms
+
+Формы позволяют выполнять различные запросы гораздо проще, чем описано выше.
+
+Ниже представлен код, создаётся элемент `form`. `action` - по какой ссылке выполняется запрос. `method` - метод (GET,POST,PUT,DELETE)
+
+Дальше есть несколько `input`, кроме него можно применять и другие теги, например `<select name="species_id">`. Тег `required` - обязательно к заполнению.
+
+По нажатию на кнопку `submit` JSON код формируется самостоятельно,
+
+```JSON
+{
+    "name": "value_from_input_with_name_is_name",
+    "species_id": "value_from_input"
+}
+```
+
+Он получается из тегов с атрибутом name. И дальше сформированный JSON отправляется по ссылке. В данном случае будет перенаправление на другую страницу, на которой будет выведен ответ на запрос (скорее всего вы возвращали id)
+
+```HTML
+<html>
+    <body>
+        <form
+        action="https://apex.oracle.com/pls/apex/for_victory1/zoo/animals"
+        method="post"
+        >
+        <input type="text" name="name" required />
+        <input type="number" name="species_id" required />
+        <input type="submit" value="Submit" />
+        </form>
+    </body>
+</html>
+```
+
+Редирект на другую страницу может быть проблемой. Есть варианты решения, например:
+
+```HTML
+<html>
+    <body>
+
+        <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe"></iframe>
+
+        <form
+        action="https://apex.oracle.com/pls/apex/for_victory1/zoo/animals"
+        method="post"
+        target="dummyframe"
+        >
+        <input type="text" name="name" required />
+        <input type="number" name="species_id" required />
+        <input type="submit" value="Submit" />
+        </form>
+    </body>
+</html>
+```

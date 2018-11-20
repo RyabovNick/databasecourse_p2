@@ -10,7 +10,9 @@
 
 ## Использование git
 
-В visual studio code легко работать с репозиторием ![репозиторием](./images/2018-11-20_09-33-31.png)
+В visual studio code легко работать с репозиторием
+
+![репозиторием](./images/2018-11-20_09-33-31.png)
 
 В выделенном элементе находится возможность отправки коммитов.
 
@@ -78,7 +80,7 @@
 
 ![consoleutils](https://i.imgur.com/0tiesd2.gif)
 
-### [Quokka.js](https://marketplace.visualstudio.com/items?itemName=WallabyJs.quokka-vscode]
+### [Quokka.js](https://marketplace.visualstudio.com/items?itemName=WallabyJs.quokka-vscode)
 
 Позволяет запускать js код в real-time
 

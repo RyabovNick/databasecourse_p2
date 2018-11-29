@@ -46,4 +46,8 @@
 
 ## Семинар №3 + ДЗ
 
+[NodeJS](../NodeJs)
+
+[NodeJS подключение к БД](../NodeJs/APIwithDB)
+
 ### Теория №3

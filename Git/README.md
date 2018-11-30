@@ -1,6 +1,6 @@
 # Статья про Git
 
-![Картинка](/1_0o9GZUzXiNnI4poEvxvy8g1.png)
+![Картинка](./1_0o9GZUzXiNnI4poEvxvy8g1.png)
 
 ## Что же такое Git?
 

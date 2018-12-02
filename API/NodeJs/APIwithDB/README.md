@@ -170,3 +170,16 @@ connection.query(
 Проблема решится.
 
 На клиентской части нужно использовать ссылки вида `http://localhost:8080/api`
+
+# Обработка API с JSON
+
+Если для POST, PUT API необходимо обрабатывать JSON, то встроенными средствами сделать не получиться. Необходимо установить `npm install body-parser`
+
+подключить библиотеку `const bodyParser = require('body-parser')`
+
+и использовать в приложении
+
+```
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+```

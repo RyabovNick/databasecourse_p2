@@ -38,7 +38,7 @@ http://116.203.90.25
 введите название,
 
 - host: localhost 
-- port: 5432
+- port: 7777
 - username: pg login (из таблицы)
 - password: по умолчанию 123123123, смените
 

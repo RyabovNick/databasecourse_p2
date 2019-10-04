@@ -1,29 +1,15 @@
 require('dotenv').config()
+const Database = require('./config/database')
+const classes = require('./models/classes')
 
-const Sequelize = require('sequelize')
+const getClasses = async () => {
+  const result = await classes.findAll()
 
-// авторизационные данные из .env переменных
-const { PG_DATABASE, PG_USER, PG_PASSWORD, PG_HOST } = process.env
-const sequelize = new Sequelize(PG_DATABASE, PG_USER, PG_PASSWORD, {
-  host: PG_HOST,
-  dialect: 'postgres',
+  console.log('result: ', result)
+}
+
+Database.authenticate().then(async () => {
+  await Database.sync()
+  const result = await getClasses()
+  console.log('result: ', result)
 })
-
-sequelize
-  .authenticate()
-  .then(() => {
-    console.log('Connection has been established successfully.')
-  })
-  .catch(err => {
-    console.error('Unable to connect to the database:', err)
-  })
-
-// const sequelize = new Sequelize(/* ... */, {
-//   // ...
-//   pool: {
-//     max: 5,
-//     min: 0,
-//     acquire: 30000,
-//     idle: 10000
-//   }
-// });

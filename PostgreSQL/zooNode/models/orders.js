@@ -1,5 +1,5 @@
 const Database = require('../config/database')
-const { STRING, INTEGER } = require('sequelize')
+const { STRING, INTEGER, BLOB } = require('sequelize')
 const classes = require('./classes')
 
 const orders = Database.define(
@@ -7,11 +7,11 @@ const orders = Database.define(
   {
     name: STRING,
     description: BLOB('medium'),
-    class_id: INTEGER
+    class_id: INTEGER,
   },
   {
-    underscored: true
-  }
+    underscored: true,
+  },
 )
 
 orders.belongsTo(classes)

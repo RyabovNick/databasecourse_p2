@@ -1,19 +1,24 @@
-'use strict';
-module.exports = (sequelize, DataTypes) => {
-  const animals = sequelize.define('animals', {
-    name: DataTypes.STRING,
-    species_id: DataTypes.INTEGER,
-    birth: DataTypes.DATE,
-    death: DataTypes.DATE,
-    weight: DataTypes.DECIMAL,
-    length: DataTypes.DECIMAL,
-    height: DataTypes.DECIMAL,
-    sex: DataTypes.BOOLEAN
-  }, {
+const Database = require('../config/database')
+const { STRING, INTEGER } = require('sequelize')
+const species = require('./species')
+
+const animals = Database.define(
+  'animals',
+  {
+    name: STRING,
+    species_id: INTEGER,
+    birth: DATE,
+    death: DATE,
+    weight: DECIMAL,
+    length: DECIMAL,
+    height: DECIMAL,
+    sex: BOOLEAN,
+  },
+  {
     underscored: true,
-  });
-  animals.associate = function(models) {
-    // associations can be defined here
-  };
-  return animals;
-};
+  },
+)
+
+animals.belongsTo(species)
+
+module.exports = animals

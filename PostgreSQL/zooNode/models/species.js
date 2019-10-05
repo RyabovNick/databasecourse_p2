@@ -7,11 +7,11 @@ const species = Database.define(
   {
     name: STRING,
     description: BLOB('medium'),
-    genus_id: INTEGER
+    genus_id: INTEGER,
   },
   {
-    underscored: true
-  }
+    underscored: true,
+  },
 )
 
 species.belongsTo(genuses)

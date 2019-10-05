@@ -1,15 +1,15 @@
 const Database = require('../config/database')
-const { STRING } = require('sequelize')
+const { STRING, BLOB } = require('sequelize')
 
 const types = Database.define(
   'types',
   {
     name: STRING,
-    description: BLOB('medium')
+    description: BLOB('medium'),
   },
   {
-    underscored: true
-  }
+    underscored: true,
+  },
 )
 
 module.exports = types

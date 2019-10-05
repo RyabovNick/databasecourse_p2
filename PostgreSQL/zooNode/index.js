@@ -1,9 +1,11 @@
 require('dotenv').config()
 const Database = require('./config/database')
-const classes = require('./models/classes')
+const types = require('./models/types')
 
 const getClasses = async () => {
-  const result = await classes.findAll()
+  const result = await types.findAll({
+    attributes: ['name'],
+  })
 
   console.log('result: ', result)
 }

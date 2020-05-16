@@ -1,5 +1,7 @@
 # Статья про Git
 
+Перевод статьи: https://medium.com/free-code-camp/how-not-to-be-afraid-of-git-anymore-fe1da7415286
+
 ![Картинка](./1_0o9GZUzXiNnI4poEvxvy8g1.png)
 
 ## Что же такое Git?

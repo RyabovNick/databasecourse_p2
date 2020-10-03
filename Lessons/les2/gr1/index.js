@@ -8,7 +8,7 @@ const client = new Client({
     port: process.env.DB_PORT,
 })
 
-const id = '1 or 1 = 1'
+const id = '1'
 
 client.connect()
 client

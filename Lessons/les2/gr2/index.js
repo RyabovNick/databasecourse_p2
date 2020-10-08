@@ -39,6 +39,7 @@ async function addCar() {
     // throw 'ERROR!!!!!'
 
     const carID = resCarID.rows[0].id
+    console.log('get carID:', carID)
 
     const resManagerID = await client.query(`
   SELECT * 
@@ -47,6 +48,7 @@ async function addCar() {
   LIMIT 1
   `)
     const managerID = resManagerID.rows[0].id
+    console.log('get managerID', managerID)
 
     await client.query(
       `UPDATE manager
@@ -54,11 +56,16 @@ async function addCar() {
         WHERE id = $2`,
       [carID, managerID]
     )
+
     await client.query('COMMIT')
+    console.log('commit')
   } catch (err) {
-    client.query('ROLLBACK')
+    console.error(err)
+    await client.query('ROLLBACK')
+    console.log('rollback')
   } finally {
-    client.end()
+    await client.end()
+    console.log('close connection')
   }
 }
 

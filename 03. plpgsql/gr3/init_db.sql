@@ -114,3 +114,122 @@ BEGIN
     and work_start <= t and work_end >= t;
 END
 $$ Language plpgsql;
+
+/* #### LESSON 24.10 #### */
+CREATE TABLE staff_audit (
+  -- системные атрибуты
+  operation varchar(1) NOT NULL, -- Либо INSERT (I), UPDATE (U), DELETE (D); TG_OP
+  created_at TIMESTAMP DEFAULT now() NOT NULL, -- Во сколько была создана строка в таблице staff audit
+  -- атрибуты из таблицы staff
+  staff_id INTEGER NOT NULL, -- тут осознанно нет REFERENCES, потому что в случае удаления в таблице staff ссылаться будет не на что 
+  name varchar(255) NOT NULL,
+  surname varchar(255) NOT NULL,
+  position varchar(255) NOT NULL,
+  first_day DATE NOT NULL,
+  experience_before_month INTEGER NOT NULL DEFAULT 0,
+  birth_day DATE NOT NULL,
+  sex varchar(1) NOT NULL
+);
+
+CREATE OR REPLACE FUNCTION staff_audit_tg() RETURNS TRIGGER AS $$
+  BEGIN
+    -- если триггер был вызван оператором INSERT
+    IF (TG_OP = 'INSERT') THEN
+      RAISE NOTICE 'RUN INSERT in staff_audit_tg';
+      INSERT INTO staff_audit SELECT 'I', now(), NEW.*;
+    ELSIF (TG_OP = 'UPDATE') THEN
+      RAISE NOTICE 'RUN UPDATE in staff_audit_tg';
+      INSERT INTO staff_audit SELECT 'U', now(), NEW.*;
+    ELSIF (TG_OP = 'DELETE') THEN
+      RAISE NOTICE 'RUN DELETE in staff_audit_tg';
+      INSERT INTO staff_audit SELECT 'D', now(), OLD.*;
+    END IF;
+    RETURN NULL; -- нам не нужно ничего возвращать, т.к. функция будет использоваться в AFTER tg
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER staff_audit
+  AFTER INSERT OR UPDATE OR DELETE ON staff
+  FOR EACH ROW EXECUTE FUNCTION staff_audit_tg();
+  
+INSERT INTO staff (name, surname, position, first_day, experience_before_month, birth_day, sex) VALUES 
+('Пётр', 'Петров', 'Окулист', '11.01.2008', 126, '01.15.1961', 'М');
+
+UPDATE staff
+SET surname = 'Николаев'
+WHERE id = 4;
+
+DELETE FROM staff WHERE id = 3;
+
+SELECT * FROM staff;
+
+SELECT * FROM staff_audit;
+
+SELECT * FROM patient;
+
+CREATE OR REPLACE VIEW patient_consultation_view AS
+  SELECT patient.*, consultation.staff_id, consultation.arrive_date, consultation.description
+  FROM patient
+  INNER JOIN consultation ON consultation.patient_id = patient.id;
+
+-- изменяем тип arrive_date на TIMESTAMP
+ALTER TABLE consultation 
+  ALTER COLUMN arrive_date TYPE TIMESTAMP;
+  
+SELECT * 
+FROM patient_consultation_view;
+
+INSERT INTO patient_consultation_view(id, staff_id, arrive_date, description) VALUES
+(3, 2, now(), 'Description...')
+
+
+UPDATE patient_consultation_view
+SET arrive_date = now(), description = 'Changes were made...'
+WHERE consultation_id = 5;
+
+DELETE FROM patient_consultation_view
+WHERE consultation_id = 3;
+
+CREATE OR REPLACE VIEW patient_consultation_view AS
+SELECT patient.*, consultation.id as consultation_id, consultation.staff_id, consultation.arrive_date, consultation.description
+FROM patient
+INNER JOIN consultation ON consultation.patient_id = patient.id;
+
+DROP VIEW patient_consultation_view
+
+CREATE OR REPLACE FUNCTION update_patient_consultation_view() RETURNS TRIGGER AS $$
+BEGIN
+	IF (TG_OP = 'INSERT') THEN
+		RAISE NOTICE 'RUN INSERT in staff_audit_tg';
+		INSERT INTO consultation(patient_id, staff_id, arrive_date, description) VALUES
+		(NEW.id, NEW.staff_id, NEW.arrive_date, NEW.description);
+		RETURN NEW;
+	ELSIF (TG_OP = 'UPDATE') THEN
+		RAISE NOTICE 'RUN UPDATE in staff_audit_tg';
+		UPDATE consultation
+		SET arrive_date = NEW.arrive_date, description = NEW.description
+		WHERE id = OLD.consultation_id;
+		RETURN NEW;
+	ELSIF (TG_OP = 'DELETE') THEN
+		RAISE NOTICE 'RUN DELETE in staff_audit_tg';
+		DELETE FROM consultation
+		Where id = OLD.consultation_id;
+		RETURN OLD;
+	END IF;
+END
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER patient_consultation_view_tg
+INSTEAD OF INSERT OR UPDATE OR DELETE
+ON patient_consultation_view
+FOR EACH ROW EXECUTE FUNCTION update_patient_consultation_view();
+
+CREATE TRIGGER not_allow_change_name_tg
+BEFORE UPDATE — or AFTER
+ON staff
+FOR EACH ROW EXECUTE FUNCTION not_allow_change_name();
+
+UPDATE staff
+SET name = 'Doe'
+WHERE id = 1;

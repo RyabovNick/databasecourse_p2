@@ -17,7 +17,9 @@ CREATE TABLE client (
 	id SERIAL PRIMARY KEY,
 	name varchar(255) NOT NULL,
 	address varchar(1000) NOT NULL,
-	phone varchar(11) NOT NULL
+	phone varchar(11) NOT NULL,
+	email varchar(255),
+	password varchar(255)
 );
 
 INSERT INTO client (name, address, phone) VALUES

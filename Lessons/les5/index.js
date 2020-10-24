@@ -1,7 +1,21 @@
 require('dotenv').config()
 const express = require('express')
 const pool = require('./config/db')
+// body parser, чтобы была возможность парсить body
+const bodyParser = require('body-parser')
+
 const app = express()
+// чтобы парсить application/json
+app.use(bodyParser.json())
+
+// TODO API:
+// 1) POST /sign_in - Войти в систему. 
+//    Передаваться будет email, password.
+//    Нужно проверить, что пользователь в таким email и password
+//    существует.
+// 2) GET /menu Получить меню. Без параметров 
+//      (TODO: добавить пагинацию, сортировку и фильтры (поиск по цене, по весу))
+// 3) DELETE /user_order/:id - (id - id заказа)
 
 app.route('/now').get(async (req, res) => {
   const pgclient = await pool.connect()
@@ -10,6 +24,7 @@ app.route('/now').get(async (req, res) => {
   res.send(rows[0].now)
 })
 
+// Все заказы конкретного пользователя
 app.route('/user_order/:id').get(async (req, res) => {
   let pgclient
   try {
@@ -35,41 +50,161 @@ app.route('/user_order/:id').get(async (req, res) => {
   }
 })
 
+// Сделать новый заказ
+// Структура body:
+// [
+//   {
+//     menu_id: 1,
+//     count: 2
+//   }
+// ]
 app.route('/make_order/:id').post(async (req, res) => {
   // TODO: получать id не из параметра, а из токена
-  let pgclient
+
+  // TODO: обработать ошибку, когда подключиться не удалось
+  let pgclient = await pool.connect()
   try {
-    pgclient = await pool.connect()
     const { id } = req.params
+
+    // открываем транзакцию
+    await pgclient.query('BEGIN')
+
+    // Создали заказ и получили его ID
     const { rows } = await pgclient.query(`
     INSERT INTO order_ (client_id) VALUES ($1) RETURNING id
     `, [id])
     const orderID = rows[0].id
+
+    // делаем цикл по body
+    // чтобы подготовить запрос на получение цены
+    // по каждому товару из заказа
+
+    // параметры для подготовки IN запроса
+    // пример: IN ($1,$2,$3)
+    let params = [] // ["$1", "$2", "$3"]
+    let values = [] // [1, 2, 3]
+    for (const [i, item] of req.body.entries()) {
+      params.push(`$${i+1}`)
+      values.push(item.menu_id)
+    }
+
+    // Получить стоимость из меню
+    const { rows: costQueryRes } = await pgclient.query(`
+      SELECT id, price::numeric
+      FROM menu
+      WHERE id IN (${params.join(',')})
+    `, values)
+
+    // мы хотим содать новую переменную, которая
+    // будет включать тоже самое, что и
+    // входной body, только с вычисленной ценой
+    let orderWithCost = []
+    // для этого надо пройтись по каждому элементу
+    // в body
+    for (const item of req.body) {
+      // и для каждого элемента найти цену в costQuery
+      // полученном при помощи запроса
+      let cost = null
+      for (const i of costQueryRes) {
+        // ищем совпадение id в costQuery
+        // с menu_id переданном в body
+        if (i.id === item.menu_id) {
+          cost = i.price
+        }
+      }
+
+      // тут cost либо null, либо с значением цены
+      // и если cost null, означает, что такого товара
+      // в таблице menu не найдено, т.е. ошибка
+      // Нам надо сделать rollback, вернуть сообщение клиенту
+      if (!cost) {
+        throw new Error(`Not found in menu: ${item.menu_id}`)
+      }
+
+      orderWithCost.push({
+        ...item,
+        cost: cost * item.count // найденную стоимость на кол-во
+      })
+    }
+
+    // добавляем все продукты заказа в order_menu
+    // оптимальный вариант, это сгенерировать один
+    // INSERT, который сразу добавит всё в таблицу
+    // order_menu (как мы делали раньше)
+    // Но тут попробуем сделать с Promise.all
+    // т.е. отправить одновременно в базу все запросы
+    // а уже после отправки ждать выполнение их всех
+    // вместе.
+    let promises = []
+    for (const item of orderWithCost) {
+      promises.push(pgclient.query(
+        `INSERT INTO order_menu (order_id, menu_id, count, price) 
+          VALUES ($1, $2, $3, $4);`,
+        [orderID, item.menu_id, item.count, item.cost]
+      ))
+    }
+
+    // ждём, пока выполнятся все запросы
+    await Promise.all(promises)
+
+    // коммитим изменения в базе
+    await pgclient.query('COMMIT')
     res.send({
       order_id: orderID
     })
+  } catch (err) {
+    // Всегда, если мы попадаем в catch, то
+    // откатываем транзакцию
+    await pgclient.query('ROLLBACK') 
+    // и отправляем клиенту, что произошла ошибка
+    res.status(500).send({
+      error: err.message
+    })
+    console.error(err)
+  } finally {
+    // освобождаем соединение с postgresql
+    await pgclient.release()
+  } 
+})
 
-    // TODO: 
-    // 1. Определиться со структурой, которую будем передавать
-    // Возможно такая структура:
-    // [
-    //   {
-    //     menu_id: 1,
-    //     count: 2
-    //   }
-    // ]
-    // 2. Всё выполнять в тразакции
-    // 3. Определиться как считать стоимость заказа
-    // 4. Добавить все продукты из заказа в order_menu
+// Зарегистрироваться
+app.route('/sign_up').post(async (req, res) => {
+  // Если какой-то из параметров не будет передан, то
+  // будет SQL ошибка (NOT NULL contraint)
+  // По хорошему, нам надо тут проверить, что 
+  // параметры, которые не могут быть NULL переданы
+  const { 
+    name,
+    address,
+    phone,
+    email, 
+    password 
+  } = req.body
 
+  let pgclient = await pool.connect()
+  try {
+    const { rows } = await pgclient.query(`
+    INSERT INTO client (name, address, phone, email, password)
+    VALUES ($1,$2,$3,$4,$5) RETURNING id;
+    `, [name, address, phone, email, password])
+
+    // TODO:
+    // 1) Пароль не будем хранить в голом виде, т.е. шифрование
+    // 2) Добавить JWT и генерить токен, возвращать в ответе на запрос
+    // вместе с id. В токен в payload добавить id
+
+    res.send({
+      id: rows[0].id
+    })
   } catch (err) {
     res.status(500).send({
       error: err.message
     })
     console.error(err)
   } finally {
+    // освобождаем соединение с postgresql
     await pgclient.release()
-  } 
+  }
 })
 
 app.listen(8080, () => {

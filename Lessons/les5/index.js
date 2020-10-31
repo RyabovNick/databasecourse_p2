@@ -13,11 +13,11 @@ const app = express()
 app.use(bodyParser.json())
 
 // TODO API:
-// 1) POST /sign_in - Войти в систему. 
+// 1) POST /sign_in - Войти в систему.
 //    Передаваться будет email, password.
 //    Нужно проверить, что пользователь в таким email и password
 //    существует.
-// 2) GET /menu Получить меню. Без параметров 
+// 2) GET /menu Получить меню. Без параметров
 //      (TODO: добавить пагинацию, сортировку и фильтры (поиск по цене, по весу))
 // 3) DELETE /user_order/:id - (id - id заказа)
 
@@ -29,14 +29,14 @@ app.route('/now').get(async (req, res) => {
 })
 
 /**
- * checkAuth валидирует токен, 
+ * checkAuth валидирует токен,
  * в случае успеха возвращает payload
- * @param {*} req 
+ * @param {*} req
  */
 async function checkAuth(req) {
   const authHeader = req.headers.authorization
 
-  let token 
+  let token
   if (authHeader) {
     const h = authHeader.split(' ')
     if (h[0] !== 'Bearer') {
@@ -63,7 +63,7 @@ app.route('/user_order').get(async (req, res) => {
     tokenPaylod = await checkAuth(req)
   } catch (err) {
     res.status(401).send({
-      error: err.message
+      error: err.message,
     })
     return
   }
@@ -72,22 +72,24 @@ app.route('/user_order').get(async (req, res) => {
   try {
     // значение из URL
     pgclient = await pool.connect()
-    const { rows } = await pgclient.query(`
+    const { rows } = await pgclient.query(
+      `
       SELECT id, client_id, created_at
       FROM order_
       WHERE client_id = $1
       ORDER BY created_at DESC
-    `, [tokenPaylod.id])
+    `,
+      [tokenPaylod.id]
+    )
     res.send(rows)
   } catch (err) {
     res.status(500).send({
-      error: err.message
+      error: err.message,
     })
     console.error(err)
   } finally {
     // Не забываем всегда закрывать соединение с базой
     await pgclient.release()
-
   }
 })
 
@@ -111,9 +113,12 @@ app.route('/make_order/:id').post(async (req, res) => {
     await pgclient.query('BEGIN')
 
     // Создали заказ и получили его ID
-    const { rows } = await pgclient.query(`
+    const { rows } = await pgclient.query(
+      `
     INSERT INTO order_ (client_id) VALUES ($1) RETURNING id
-    `, [id])
+    `,
+      [id]
+    )
     const orderID = rows[0].id
 
     // делаем цикл по body
@@ -125,16 +130,19 @@ app.route('/make_order/:id').post(async (req, res) => {
     let params = [] // ["$1", "$2", "$3"]
     let values = [] // [1, 2, 3]
     for (const [i, item] of req.body.entries()) {
-      params.push(`$${i+1}`)
+      params.push(`$${i + 1}`)
       values.push(item.menu_id)
     }
 
     // Получить стоимость из меню
-    const { rows: costQueryRes } = await pgclient.query(`
+    const { rows: costQueryRes } = await pgclient.query(
+      `
       SELECT id, price::numeric
       FROM menu
       WHERE id IN (${params.join(',')})
-    `, values)
+    `,
+      values
+    )
 
     // мы хотим содать новую переменную, которая
     // будет включать тоже самое, что и
@@ -164,7 +172,7 @@ app.route('/make_order/:id').post(async (req, res) => {
 
       orderWithCost.push({
         ...item,
-        cost: cost * item.count // найденную стоимость на кол-во
+        cost: cost * item.count, // найденную стоимость на кол-во
       })
     }
 
@@ -178,11 +186,13 @@ app.route('/make_order/:id').post(async (req, res) => {
     // вместе.
     let promises = []
     for (const item of orderWithCost) {
-      promises.push(pgclient.query(
-        `INSERT INTO order_menu (order_id, menu_id, count, price) 
+      promises.push(
+        pgclient.query(
+          `INSERT INTO order_menu (order_id, menu_id, count, price) 
           VALUES ($1, $2, $3, $4);`,
-        [orderID, item.menu_id, item.count, item.cost]
-      ))
+          [orderID, item.menu_id, item.count, item.cost]
+        )
+      )
     }
 
     // ждём, пока выполнятся все запросы
@@ -191,41 +201,41 @@ app.route('/make_order/:id').post(async (req, res) => {
     // коммитим изменения в базе
     await pgclient.query('COMMIT')
     res.send({
-      order_id: orderID
+      order_id: orderID,
     })
   } catch (err) {
     // Всегда, если мы попадаем в catch, то
     // откатываем транзакцию
-    await pgclient.query('ROLLBACK') 
+    await pgclient.query('ROLLBACK')
     // и отправляем клиенту, что произошла ошибка
     res.status(500).send({
-      error: err.message
+      error: err.message,
     })
     console.error(err)
   } finally {
     // освобождаем соединение с postgresql
     await pgclient.release()
-  } 
+  }
 })
 
 app.route('/sign_in').post(async (req, res) => {
-  const {
-    email,
-    password
-  } = req.body
+  const { email, password } = req.body
 
   try {
-    const { rows } = await pool.query(`
+    const { rows } = await pool.query(
+      `
     SELECT id, email, password
     FROM client
     WHERE email = $1
-    `, [email])
+    `,
+      [email]
+    )
 
     // если пользователь с таким email
     // не найден
     if (rows.length == 0) {
       res.status(401).send({
-        error: 'User not found'
+        error: 'User not found',
       })
       return
     }
@@ -234,27 +244,30 @@ app.route('/sign_in').post(async (req, res) => {
     const isValid = await bcrypt.compare(password, rows[0].password)
     if (!isValid) {
       res.status(401).send({
-        error: 'Invalid password'
+        error: 'Invalid password',
       })
       return
     }
 
     // если правильность введённых данных пользователем
     // подтверждена
-    const token = jwt.sign({
-      id: rows[0].id,
-      email: rows[0].email
-    }, secret, {
-      expiresIn: "1d",
-    })
+    const token = jwt.sign(
+      {
+        id: rows[0].id,
+        email: rows[0].email,
+      },
+      secret,
+      {
+        expiresIn: '1d',
+      }
+    )
 
     res.send({
-      token
+      token,
     })
-
   } catch (err) {
     res.status(500).send({
-      error: err.message
+      error: err.message,
     })
   }
 })
@@ -263,35 +276,32 @@ app.route('/sign_in').post(async (req, res) => {
 app.route('/sign_up').post(async (req, res) => {
   // Если какой-то из параметров не будет передан, то
   // будет SQL ошибка (NOT NULL contraint)
-  // По хорошему, нам надо тут проверить, что 
+  // По хорошему, нам надо тут проверить, что
   // параметры, которые не могут быть NULL переданы
-  const { 
-    name,
-    address,
-    phone,
-    email, 
-    password 
-  } = req.body
+  const { name, address, phone, email, password } = req.body
 
   let pgclient = await pool.connect()
   try {
     const hash = await bcrypt.hash(password, 8)
 
-    const { rows } = await pgclient.query(`
+    const { rows } = await pgclient.query(
+      `
     INSERT INTO client (name, address, phone, email, password)
     VALUES ($1,$2,$3,$4,$5) RETURNING id;
-    `, [name, address, phone, email, hash])
+    `,
+      [name, address, phone, email, hash]
+    )
 
     // TODO:
     // 2) Добавить JWT и генерить токен, возвращать в ответе на запрос
     // вместе с id. В токен в payload добавить id
 
     res.send({
-      id: rows[0].id
+      id: rows[0].id,
     })
   } catch (err) {
     res.status(500).send({
-      error: err.message
+      error: err.message,
     })
     console.error(err)
   } finally {

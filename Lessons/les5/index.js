@@ -1,6 +1,5 @@
 require('dotenv').config()
 const express = require('express')
-const pool = require('./config/db')
 // body parser, чтобы была возможность парсить body
 const bodyParser = require('body-parser')
 const jwt = require('jsonwebtoken')
@@ -9,22 +8,15 @@ const secret = 'jwt_secret_value'
 
 // Services
 const clientService = require('./services/client')
+const menuService = require('./services/menu')
+const orderService = require('./services/order')
 
 const app = express()
 // чтобы парсить application/json
 app.use(bodyParser.json())
 
 // TODO API:
-// 2) GET /menu Получить меню. Без параметров
-//      (TODO: добавить пагинацию, сортировку и фильтры (поиск по цене, по весу))
 // 3) DELETE /user_order/:id - (id - id заказа)
-
-app.route('/now').get(async (req, res) => {
-  const pgclient = await pool.connect()
-  const { rows } = await pgclient.query('SELECT now() as now')
-  await pgclient.release()
-  res.send(rows[0].now)
-})
 
 /**
  * checkAuth валидирует токен,
@@ -49,6 +41,19 @@ async function checkAuth(req) {
   return jwt.verify(token, secret)
 }
 
+app.route('/menu').get(async (req, res) => {
+  const { name } = req.query
+
+  try {
+    const menu = await menuService.findMenu(name)
+    res.send(menu)
+  } catch (err) {
+    res.status(500).send({
+      error: err.message,
+    })
+  }
+})
+
 // Все заказы конкретного пользователя
 // id пользователя берётся из токена
 app.route('/user_order').get(async (req, res) => {
@@ -62,28 +67,13 @@ app.route('/user_order').get(async (req, res) => {
     return
   }
 
-  let pgclient
   try {
-    // значение из URL
-    pgclient = await pool.connect()
-    const { rows } = await pgclient.query(
-      `
-      SELECT id, client_id, created_at
-      FROM order_
-      WHERE client_id = $1
-      ORDER BY created_at DESC
-    `,
-      [tokenPaylod.id]
-    )
-    res.send(rows)
+    const order = await orderService.findOrderByClientID(tokenPaylod.id)
+    res.send(order)
   } catch (err) {
     res.status(500).send({
       error: err.message,
     })
-    console.error(err)
-  } finally {
-    // Не забываем всегда закрывать соединение с базой
-    await pgclient.release()
   }
 })
 
@@ -98,117 +88,17 @@ app.route('/user_order').get(async (req, res) => {
 app.route('/make_order/:id').post(async (req, res) => {
   // TODO: получать id не из параметра, а из токена
 
-  // TODO: обработать ошибку, когда подключиться не удалось
-  let pgclient = await pool.connect()
   try {
     const { id } = req.params
+    const orderID = await orderService.makeOrder(id, req.body)
 
-    // открываем транзакцию
-    await pgclient.query('BEGIN')
-
-    // Создали заказ и получили его ID
-    const { rows } = await pgclient.query(
-      `
-    INSERT INTO order_ (client_id) VALUES ($1) RETURNING id
-    `,
-      [id]
-    )
-    const orderID = rows[0].id
-
-    // делаем цикл по body
-    // чтобы подготовить запрос на получение цены
-    // по каждому товару из заказа
-
-    // параметры для подготовки IN запроса
-    // пример: IN ($1,$2,$3)
-    let params = [] // ["$1", "$2", "$3"]
-    let values = [] // [1, 2, 3]
-    for (const [i, item] of req.body.entries()) {
-      params.push(`$${i + 1}`)
-      values.push(item.menu_id)
-    }
-
-    // Получить стоимость из меню
-    const { rows: costQueryRes } = await pgclient.query(
-      `
-      SELECT id, price::numeric
-      FROM menu
-      WHERE id IN (${params.join(',')})
-    `,
-      values
-    )
-
-    // мы хотим содать новую переменную, которая
-    // будет включать тоже самое, что и
-    // входной body, только с вычисленной ценой
-    let orderWithCost = []
-    // для этого надо пройтись по каждому элементу
-    // в body
-    for (const item of req.body) {
-      // и для каждого элемента найти цену в costQuery
-      // полученном при помощи запроса
-      let cost = null
-      for (const i of costQueryRes) {
-        // ищем совпадение id в costQuery
-        // с menu_id переданном в body
-        if (i.id === item.menu_id) {
-          cost = i.price
-        }
-      }
-
-      // тут cost либо null, либо с значением цены
-      // и если cost null, означает, что такого товара
-      // в таблице menu не найдено, т.е. ошибка
-      // Нам надо сделать rollback, вернуть сообщение клиенту
-      if (!cost) {
-        throw new Error(`Not found in menu: ${item.menu_id}`)
-      }
-
-      orderWithCost.push({
-        ...item,
-        cost: cost * item.count, // найденную стоимость на кол-во
-      })
-    }
-
-    // добавляем все продукты заказа в order_menu
-    // оптимальный вариант, это сгенерировать один
-    // INSERT, который сразу добавит всё в таблицу
-    // order_menu (как мы делали раньше)
-    // Но тут попробуем сделать с Promise.all
-    // т.е. отправить одновременно в базу все запросы
-    // а уже после отправки ждать выполнение их всех
-    // вместе.
-    let promises = []
-    for (const item of orderWithCost) {
-      promises.push(
-        pgclient.query(
-          `INSERT INTO order_menu (order_id, menu_id, count, price) 
-          VALUES ($1, $2, $3, $4);`,
-          [orderID, item.menu_id, item.count, item.cost]
-        )
-      )
-    }
-
-    // ждём, пока выполнятся все запросы
-    await Promise.all(promises)
-
-    // коммитим изменения в базе
-    await pgclient.query('COMMIT')
     res.send({
       order_id: orderID,
     })
   } catch (err) {
-    // Всегда, если мы попадаем в catch, то
-    // откатываем транзакцию
-    await pgclient.query('ROLLBACK')
-    // и отправляем клиенту, что произошла ошибка
     res.status(500).send({
       error: err.message,
     })
-    console.error(err)
-  } finally {
-    // освобождаем соединение с postgresql
-    await pgclient.release()
   }
 })
 

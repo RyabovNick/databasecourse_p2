@@ -5,9 +5,7 @@ const pool = require('../../config/db')
  * @param {number} id - ID клиента
  */
 async function findOrderByClientID(id) {
-  // TODO: либо возвращать ещё order_menu,
-  // либо сделать отдельную функцию для отдельного API
-  // возможно стоит отображать стоимость заказа
+  // TODO: в этой функции ещё возвращать стоимость заказа (д)
   const { rows } = await pool.query(
     `
   SELECT id, client_id, created_at

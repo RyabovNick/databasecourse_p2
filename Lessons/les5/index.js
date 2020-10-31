@@ -16,8 +16,9 @@ const app = express()
 // чтобы парсить application/json
 app.use(bodyParser.json())
 
-// TODO API:
-// 3) DELETE /user_order/:id - (id - id заказа)
+// TODO API (д):
+// 1) По id заказа order_menu возвращать состав заказа (с названием продуктов)
+// 2) DELETE /user_order/:id - (id - id заказа)
 
 app.route('/menu').get(async (req, res) => {
   const { name } = req.query
@@ -47,8 +48,6 @@ app.route('/user_order').get(authMiddleware, async (req, res) => {
 
 // Сделать новый заказ
 app.route('/make_order').post(authMiddleware, async (req, res) => {
-  // TODO: получать id не из параметра, а из токена
-
   try {
     const orderID = await orderService.makeOrder(req.client.id, req.body)
 

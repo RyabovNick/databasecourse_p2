@@ -23,7 +23,7 @@ async function findMenu(name) {
   }
 
   // TODO: решить проблему, с $1 <- параметром
-  // в запросе. (Например счётчик)
+  // в запросе. (Например счётчик) (д)
 
   const { rows } = await pool.query(query, values)
   return rows

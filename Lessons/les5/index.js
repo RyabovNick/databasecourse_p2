@@ -3,6 +3,10 @@ const express = require('express')
 const pool = require('./config/db')
 // body parser, чтобы была возможность парсить body
 const bodyParser = require('body-parser')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+
+const secret = 'jwt_secret_value'
 
 const app = express()
 // чтобы парсить application/json
@@ -24,19 +28,56 @@ app.route('/now').get(async (req, res) => {
   res.send(rows[0].now)
 })
 
+/**
+ * checkAuth валидирует токен, 
+ * в случае успеха возвращает payload
+ * @param {*} req 
+ */
+async function checkAuth(req) {
+  const authHeader = req.headers.authorization
+
+  let token 
+  if (authHeader) {
+    const h = authHeader.split(' ')
+    if (h[0] !== 'Bearer') {
+      throw new Error('Allowed only Bearer token')
+    }
+
+    token = h[1]
+  } else {
+    throw new Error('Token not found')
+  }
+
+  try {
+    return jwt.verify(token, secret)
+  } catch (err) {
+    throw err
+  }
+}
+
 // Все заказы конкретного пользователя
-app.route('/user_order/:id').get(async (req, res) => {
+// id пользователя берётся из токена
+app.route('/user_order').get(async (req, res) => {
+  let tokenPaylod
+  try {
+    tokenPaylod = await checkAuth(req)
+  } catch (err) {
+    res.status(401).send({
+      error: err.message
+    })
+    return
+  }
+
   let pgclient
   try {
     // значение из URL
     pgclient = await pool.connect()
-    const { id } = req.params
     const { rows } = await pgclient.query(`
       SELECT id, client_id, created_at
       FROM order_
       WHERE client_id = $1
       ORDER BY created_at DESC
-    `, [id])
+    `, [tokenPaylod.id])
     res.send(rows)
   } catch (err) {
     res.status(500).send({
@@ -167,6 +208,57 @@ app.route('/make_order/:id').post(async (req, res) => {
   } 
 })
 
+app.route('/sign_in').post(async (req, res) => {
+  const {
+    email,
+    password
+  } = req.body
+
+  try {
+    const { rows } = await pool.query(`
+    SELECT id, email, password
+    FROM client
+    WHERE email = $1
+    `, [email])
+
+    // если пользователь с таким email
+    // не найден
+    if (rows.length == 0) {
+      res.status(401).send({
+        error: 'User not found'
+      })
+      return
+    }
+
+    // проверяем правильность пароля
+    const isValid = await bcrypt.compare(password, rows[0].password)
+    if (!isValid) {
+      res.status(401).send({
+        error: 'Invalid password'
+      })
+      return
+    }
+
+    // если правильность введённых данных пользователем
+    // подтверждена
+    const token = jwt.sign({
+      id: rows[0].id,
+      email: rows[0].email
+    }, secret, {
+      expiresIn: "1d",
+    })
+
+    res.send({
+      token
+    })
+
+  } catch (err) {
+    res.status(500).send({
+      error: err.message
+    })
+  }
+})
+
 // Зарегистрироваться
 app.route('/sign_up').post(async (req, res) => {
   // Если какой-то из параметров не будет передан, то
@@ -183,13 +275,14 @@ app.route('/sign_up').post(async (req, res) => {
 
   let pgclient = await pool.connect()
   try {
+    const hash = await bcrypt.hash(password, 8)
+
     const { rows } = await pgclient.query(`
     INSERT INTO client (name, address, phone, email, password)
     VALUES ($1,$2,$3,$4,$5) RETURNING id;
-    `, [name, address, phone, email, password])
+    `, [name, address, phone, email, hash])
 
     // TODO:
-    // 1) Пароль не будем хранить в голом виде, т.е. шифрование
     // 2) Добавить JWT и генерить токен, возвращать в ответе на запрос
     // вместе с id. В токен в payload добавить id
 

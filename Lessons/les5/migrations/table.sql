@@ -18,14 +18,14 @@ CREATE TABLE client (
 	name varchar(255) NOT NULL,
 	address varchar(1000) NOT NULL,
 	phone varchar(11) NOT NULL,
-	email varchar(255),
-	password varchar(255)
+	email varchar(255) NOT NULL UNIQUE,
+	password varchar(255) NOT NULL
 );
 
-INSERT INTO client (name, address, phone) VALUES
-('Иван', 'Боголюбова, 21, кв 14', '88005553535'),
-('Николай', 'Университетская, 2, кв 11', '83004441122'),
-('Вера', 'Пушкина, 4, кв 27', '89153002222');
+INSERT INTO client (name, address, phone, email, password) VALUES
+('Иван', 'Боголюбова, 21, кв 14', '88005553535', 'em1@gmail.com', '123'),
+('Николай', 'Университетская, 2, кв 11', '83004441122', 'em2@gmail.com', '123'),
+('Вера', 'Пушкина, 4, кв 27', '89153002222', 'em3@gmail.com', '123');
 
 CREATE TABLE order_ (
 	id SERIAL PRIMARY KEY,

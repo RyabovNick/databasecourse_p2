@@ -3,20 +3,18 @@ const express = require('express')
 const pool = require('./config/db')
 // body parser, чтобы была возможность парсить body
 const bodyParser = require('body-parser')
-const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 
 const secret = 'jwt_secret_value'
+
+// Services
+const clientService = require('./services/client')
 
 const app = express()
 // чтобы парсить application/json
 app.use(bodyParser.json())
 
 // TODO API:
-// 1) POST /sign_in - Войти в систему.
-//    Передаваться будет email, password.
-//    Нужно проверить, что пользователь в таким email и password
-//    существует.
 // 2) GET /menu Получить меню. Без параметров
 //      (TODO: добавить пагинацию, сортировку и фильтры (поиск по цене, по весу))
 // 3) DELETE /user_order/:id - (id - id заказа)
@@ -48,11 +46,7 @@ async function checkAuth(req) {
     throw new Error('Token not found')
   }
 
-  try {
-    return jwt.verify(token, secret)
-  } catch (err) {
-    throw err
-  }
+  return jwt.verify(token, secret)
 }
 
 // Все заказы конкретного пользователя
@@ -222,45 +216,7 @@ app.route('/sign_in').post(async (req, res) => {
   const { email, password } = req.body
 
   try {
-    const { rows } = await pool.query(
-      `
-    SELECT id, email, password
-    FROM client
-    WHERE email = $1
-    `,
-      [email]
-    )
-
-    // если пользователь с таким email
-    // не найден
-    if (rows.length == 0) {
-      res.status(401).send({
-        error: 'User not found',
-      })
-      return
-    }
-
-    // проверяем правильность пароля
-    const isValid = await bcrypt.compare(password, rows[0].password)
-    if (!isValid) {
-      res.status(401).send({
-        error: 'Invalid password',
-      })
-      return
-    }
-
-    // если правильность введённых данных пользователем
-    // подтверждена
-    const token = jwt.sign(
-      {
-        id: rows[0].id,
-        email: rows[0].email,
-      },
-      secret,
-      {
-        expiresIn: '1d',
-      }
-    )
+    const token = await clientService.signIn(email, password)
 
     res.send({
       token,
@@ -280,33 +236,22 @@ app.route('/sign_up').post(async (req, res) => {
   // параметры, которые не могут быть NULL переданы
   const { name, address, phone, email, password } = req.body
 
-  let pgclient = await pool.connect()
   try {
-    const hash = await bcrypt.hash(password, 8)
-
-    const { rows } = await pgclient.query(
-      `
-    INSERT INTO client (name, address, phone, email, password)
-    VALUES ($1,$2,$3,$4,$5) RETURNING id;
-    `,
-      [name, address, phone, email, hash]
-    )
-
-    // TODO:
-    // 2) Добавить JWT и генерить токен, возвращать в ответе на запрос
-    // вместе с id. В токен в payload добавить id
+    const token = await clientService.signUp({
+      name,
+      address,
+      password,
+      phone,
+      email,
+    })
 
     res.send({
-      id: rows[0].id,
+      id: token,
     })
   } catch (err) {
     res.status(500).send({
       error: err.message,
     })
-    console.error(err)
-  } finally {
-    // освобождаем соединение с postgresql
-    await pgclient.release()
   }
 })
 

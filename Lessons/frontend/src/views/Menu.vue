@@ -6,10 +6,10 @@
     class="elevation-1"
   >
     <template v-slot:[`item.created_at`]="{ item }">
-        {{ item.created_at | formatDate }}
+      {{ item.created_at | formatDate }}
     </template>
     <template v-slot:[`item.updated_at`]="{ item }">
-        {{ item.updated_at | formatDate }}
+      {{ item.updated_at | formatDate }}
     </template>
   </v-data-table>
 </template>
@@ -18,7 +18,7 @@
 import axios from 'axios'
 
 export default {
-  data () {
+  data() {
     return {
       menu: [],
       headers: [
@@ -29,11 +29,11 @@ export default {
         { text: 'Вес (г.)', value: 'weight' },
         { text: 'Создано', value: 'created_at' },
         { text: 'Изменено', value: 'updated_at' },
-      ]
+      ],
     }
   },
 
-  async created () {
+  async created() {
     this.init()
   },
 
@@ -42,7 +42,7 @@ export default {
       const res = await axios.get('http://localhost:80/menu')
       this.menu = res.data
       console.log('we are in init function!!!')
-    }
-  }
+    },
+  },
 }
 </script>

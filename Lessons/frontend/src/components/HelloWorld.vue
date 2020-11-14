@@ -64,15 +64,13 @@
           Ecosystem
         </h2>
 
-        <v-card
-          class="elevation-16 mx-auto"
-          width="300"
-        >
+        <v-card class="elevation-16 mx-auto" width="300">
           <v-card-title class="headline">
             Rate Our Framework
           </v-card-title>
           <v-card-text>
-            If you enjoy using Vuetify, please take a few seconds to rate your experience with the framework. It really helps!
+            If you enjoy using Vuetify, please take a few seconds to rate your
+            experience with the framework. It really helps!
 
             <div class="text-center mt-12">
               <v-rating
@@ -91,10 +89,7 @@
             <v-btn text>
               No Thanks
             </v-btn>
-            <v-btn
-              color="primary"
-              text
-            >
+            <v-btn color="primary" text>
               Rate Now
             </v-btn>
           </v-card-actions>
@@ -106,59 +101,60 @@
 
 <script>
 export default {
-  name: "HelloWorld",
+  name: 'HelloWorld',
 
   data: () => ({
     ecosystem: [
       {
-        text: "vuetify-loader",
-        href: "https://github.com/vuetifyjs/vuetify-loader"
+        text: 'vuetify-loader',
+        href: 'https://github.com/vuetifyjs/vuetify-loader',
       },
       {
-        text: "github",
-        href: "https://github.com/vuetifyjs/vuetify"
+        text: 'github',
+        href: 'https://github.com/vuetifyjs/vuetify',
       },
       {
-        text: "awesome-vuetify",
-        href: "https://github.com/vuetifyjs/awesome-vuetify"
-      }
+        text: 'awesome-vuetify',
+        href: 'https://github.com/vuetifyjs/awesome-vuetify',
+      },
     ],
     importantLinks: [
       {
-        text: "Documentation",
-        href: "https://vuetifyjs.com"
+        text: 'Documentation',
+        href: 'https://vuetifyjs.com',
       },
       {
-        text: "Chat",
-        href: "https://community.vuetifyjs.com"
+        text: 'Chat',
+        href: 'https://community.vuetifyjs.com',
       },
       {
-        text: "Made with Vuetify",
-        href: "https://madewithvuejs.com/vuetify"
+        text: 'Made with Vuetify',
+        href: 'https://madewithvuejs.com/vuetify',
       },
       {
-        text: "Twitter",
-        href: "https://twitter.com/vuetifyjs"
+        text: 'Twitter',
+        href: 'https://twitter.com/vuetifyjs',
       },
       {
-        text: "Articles",
-        href: "https://medium.com/vuetify"
-      }
+        text: 'Articles',
+        href: 'https://medium.com/vuetify',
+      },
     ],
     whatsNext: [
       {
-        text: "Explore components",
-        href: "https://vuetifyjs.com/components/api-explorer"
+        text: 'Explore components',
+        href: 'https://vuetifyjs.com/components/api-explorer',
       },
       {
-        text: "Select a layout",
-        href: "https://vuetifyjs.com/getting-started/pre-made-layouts"
+        text: 'Select a layout',
+        href: 'https://vuetifyjs.com/getting-started/pre-made-layouts',
       },
       {
-        text: "Frequently Asked Questions",
-        href: "https://vuetifyjs.com/getting-started/frequently-asked-questions"
-      }
-    ]
-  })
-};
+        text: 'Frequently Asked Questions',
+        href:
+          'https://vuetifyjs.com/getting-started/frequently-asked-questions',
+      },
+    ],
+  }),
+}
 </script>

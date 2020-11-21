@@ -15,6 +15,7 @@ export default {
         { text: 'ID', value: 'id' },
         { text: 'ID Клиента', value: 'client_id' },
         { text: 'Дата заказа', value: 'created_at' },
+        { text: 'Стоимость заказа', value: 'order_sum' },
       ],
     }
   },
@@ -25,6 +26,15 @@ export default {
 
   methods: {
     async init() {
+      // пытаемся достать из localStorage наш токен (по ключу)
+      // const token = localStorage.getItem('token')
+      // if (!token) {
+      //   this.$router.push({ name: 'SignIn' })
+      //   return
+      // }
+
+      // this.$axios.defaults.headers.common['Authorization'] = token
+
       const res = await this.$axios.get('/user_order')
       this.order = res.data
     },

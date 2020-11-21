@@ -5,13 +5,19 @@ const pool = require('../../config/db')
  * @param {number} id - ID клиента
  */
 async function findOrderByClientID(id) {
-  // TODO: в этой функции ещё возвращать стоимость заказа (д)
   const { rows } = await pool.query(
     `
-  SELECT id, client_id, created_at
-  FROM order_
-  WHERE client_id = $1
-  ORDER BY created_at DESC
+    WITH order_sum AS (
+      SELECT ord.id, sum(om.price) as order_sum
+      FROM order_ ord
+      INNER JOIN order_menu om ON ord.id = om.order_id
+      WHERE ord.client_id = $1
+      GROUP BY ord.id
+    )
+    
+    SELECT ord.id, ord.client_id, ord.created_at, order_sum.order_sum
+    FROM order_ ord
+    INNER JOIN order_sum ON order_sum.id = ord.id
   `,
     [id]
   )

@@ -32,9 +32,9 @@
 export default {
   data: () => ({
     valid: true,
-    email: '',
+    email: 'new_email@gmail.com',
     emailRules: [v => !!v || 'E-mail обязателен', v => /.+@.+\..+/.test(v) || 'Введите почту'],
-    password: '',
+    password: '987654',
     passwordRules: [v => !!v || 'Пароль обязателен'],
     showPassword: false,
     // snackbar

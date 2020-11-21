@@ -25,10 +25,10 @@ app.use(cors())
 // 2) DELETE /user_order/:id - (id - id заказа)
 
 app.route('/menu').get(async (req, res) => {
-  const { name } = req.query
+  const { name, price } = req.query
 
   try {
-    const menu = await menuService.findMenu(name)
+    const menu = await menuService.findMenu(name, price)
     res.send(menu)
   } catch (err) {
     res.status(500).send({

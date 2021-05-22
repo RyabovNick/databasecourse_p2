@@ -30,11 +30,41 @@ async function createOrder() {
 	}
 
 	try {
-		const orderID = await pool.query(
-			`INSERT INTO order_ (client_i) VALUES ($1) RETURNING id`,
+		// начинаем транзакцию
+		await pool.query('BEGIN')
+
+		const resOrderID = await pool.query(
+			`INSERT INTO order_ (client_id) VALUES ($1) RETURNING id`,
 			[order.cliendID]
 		)
+
+		const orderID = resOrderID.rows[0].id
+		console.log('new order: ', orderID)
+
+		// TODO: array меню с ценой
+		const resMenu = await pool.query(
+			`
+		SELECT *
+		FROM menu
+		WHERE id = $1;`,
+			[order.menu.id]
+		)
+
+		// throw new Error('ERRR!!!!!!')
+
+		console.log('menu: ', resMenu.rows)
+
+		const price = resMenu.rows[0].price * order.menu.count
+
+		await pool.query(
+			`INSERT INTO order_menu (order_id, menu_id, count, price) VALUES
+			($1, $2, $3, $4);`,
+			[orderID, order.menu.id, order.menu.count, price]
+		)
+
+		await pool.query('COMMIT')
 	} catch (error) {
+		await pool.query('ROLLBACK')
 		throw error
 	} finally {
 		pool.end()

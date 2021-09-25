@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "a.hello_world"
+		},
+		{
+			"path": "b.type"
+		},
+		{
+			"path": "c.structs"
+		},
+		{
+			"path": "d.di"
+		},
+		{
+			"path": "e.sql"
+		}
+	]
+}

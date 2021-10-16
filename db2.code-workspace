@@ -1,10 +1,13 @@
 {
 	"folders": [
 		{
-			"path": "golang"
+			"path": "golang\\godb"
 		},
 		{
-			"path": "golang\\godb"
+			"path": "golang\\intro\\d.di"
+		},
+		{
+			"path": "golang\\intro\\f.concurrency"
 		}
 	],
 	"settings": {

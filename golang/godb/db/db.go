@@ -3,9 +3,15 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrWrongPassword = fmt.Errorf("wrong password")
 )
 
 type DB struct {
@@ -13,7 +19,7 @@ type DB struct {
 }
 
 func NewDB() (*DB, error) {
-	connURI := "postgres://kalmykova:123123123@95.217.232.188:7777/kalmykova"
+	connURI := "postgres://zhavoronok:123123123@95.217.232.188:7777/zhavoronok"
 
 	db, err := sqlx.Connect("pgx", connURI)
 	if err != nil {
@@ -28,32 +34,48 @@ func NewDB() (*DB, error) {
 	}, nil
 }
 
-type Menu struct {
-	ID    int     `db:"id" json:"id"`
-	Name  string  `db:"name" json:"name"`
-	Price float64 `db:"price" json:"price"`
+type User struct {
+	ID       string
+	Login    string `db:"login" json:"login"`
+	Password string `db:"password" json:"password"`
 }
 
-func (d *DB) SelectMenu() ([]Menu, error) {
-	var menu []Menu
-	if err := d.conn.Select(&menu, `
-	SELECT id, name, price
-	FROM menu
-	`); err != nil {
-		return nil, fmt.Errorf("select menu: %w", err)
+func (d *DB) CreateUser(user User) (User, error) {
+	hashp, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return User{}, fmt.Errorf("hash: %w", err)
 	}
 
-	return menu, nil
+	var id string
+	if err := d.conn.Get(&id, `
+	INSERT INTO users(login, password)
+	VALUES ($1, $2)
+	RETURNING id`, user.Login, string(hashp)); err != nil {
+		return User{}, fmt.Errorf("create user: %w", err)
+	}
+
+	user.ID = id
+	return user, nil
 }
 
-func (d *DB) GetMenuByID(id string) (Menu, error) {
-	var menu Menu
-	if err := d.conn.Get(&menu, `
-	SELECT id, name, price
-	FROM menu
-	WHERE id = $1`, id); err != nil {
-		return Menu{}, fmt.Errorf("get menu: %w", err)
+func (d *DB) Auth(user User) (User, error) {
+	var hash string
+	if err := d.conn.Get(&hash, `
+	SELECT password
+	FROM users
+	WHERE login = $1`, user.Login); err != nil {
+		return User{}, fmt.Errorf("auth: %w", err)
 	}
 
-	return menu, nil
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(user.Password)); err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return User{}, ErrWrongPassword
+		}
+
+		return User{}, fmt.Errorf("hash: %w", err)
+	}
+
+	return User{
+		Login: user.Login,
+	}, nil
 }

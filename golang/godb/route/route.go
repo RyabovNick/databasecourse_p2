@@ -20,6 +20,9 @@ type DBInterface interface {
 	CreateUser(context.Context, user.User) (user.User, error)
 	Auth(context.Context, user.User) (user.User, error)
 	CreateTodoList(context.Context, db.TodoList, user.User) (db.TodoList, error)
+	GetRights(context.Context, string, string) (user.Rights, error)
+	AvailableTodoLists(context.Context, string) ([]db.TodoList, error)
+	GetTodoListTodo(context.Context, string) ([]db.Todo, error)
 }
 
 type Route struct {
@@ -29,7 +32,6 @@ type Route struct {
 func NewRouter(ro Route) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
-	router.Use(auth.Auth())
 
 	router.Post("/signup", func(rw http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -79,31 +81,90 @@ func NewRouter(ro Route) *chi.Mux {
 		rw.Write(token) //nolint
 	})
 
-	router.Post("/create/todo_list", func(rw http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-		var todoList db.TodoList
-		if err := UnmarshalBody(r.Body, &todoList); err != nil {
-			errors.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	router.Group(func(rout chi.Router) {
+		rout.Use(auth.Auth())
 
-		todoList, err := ro.DB.CreateTodoList(r.Context(), todoList, user.User{
-			ID: r.Context().Value("id").(string),
+		rout.Post("/todo_list", func(rw http.ResponseWriter, r *http.Request) {
+			defer r.Body.Close()
+			var todoList db.TodoList
+			if err := UnmarshalBody(r.Body, &todoList); err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			us := user.FromCtx(r.Context())
+
+			todoList, err := ro.DB.CreateTodoList(r.Context(), todoList, user.User{
+				ID:    us.ID,
+				Login: us.Login,
+			})
+			if err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			rw.Header().Set("Content-Type", "application/json")
+
+			b, err := json.Marshal(todoList)
+			if err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			rw.Write(b)
 		})
-		if err != nil {
-			errors.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
 
-		rw.Header().Set("Content-Type", "application/json")
+		rout.Get("/todo_list", func(rw http.ResponseWriter, r *http.Request) {
+			us := user.FromCtx(r.Context())
 
-		b, err := json.Marshal(todoList)
-		if err != nil {
-			errors.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
+			tl, err := ro.DB.AvailableTodoLists(r.Context(), us.ID)
+			if err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-		rw.Write(b)
+			res, err := json.Marshal(tl)
+			if err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			rw.Header().Set("Content-Type", "application/json")
+			rw.Write(res)
+		})
+
+		rout.Get("/todo_list/{id}", func(rw http.ResponseWriter, r *http.Request) {
+			us := user.FromCtx(r.Context())
+			tlID := chi.URLParam(r, "id")
+
+			// Check rights
+			has, err := ro.DB.GetRights(r.Context(), tlID, us.ID)
+			if err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if ok := user.CheckRight(user.Write, has); !ok {
+				errors.Error(rw, err.Error(), http.StatusForbidden)
+				return
+			}
+
+			// Get TodoList
+			tl, err := ro.DB.GetTodoListTodo(r.Context(), tlID)
+			if err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			res, err := json.Marshal(tl)
+			if err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			rw.Header().Set("Content-Type", "application/json")
+			rw.Write(res)
+		})
 	})
 
 	return router

@@ -127,7 +127,7 @@ func (d *DB) CreateTodoList(ctx context.Context, t TodoList, u user.User) (TodoL
 
 	if _, err := tx.Exec(`INSERT INTO user_rights 
 	(users_id, todo_lists_id, rights)
-	VALUES ($1, $2, $3)`, u.ID, todoList.ID, user.Owner); err != nil {
+	VALUES ($1, $2, $3)`, u.ID, todoList.ID, user.Owner.Name); err != nil {
 		if err := tx.Rollback(); err != nil {
 			return TodoList{}, fmt.Errorf("rollback: %w", err)
 		}
@@ -139,4 +139,38 @@ func (d *DB) CreateTodoList(ctx context.Context, t TodoList, u user.User) (TodoL
 	}
 
 	return todoList, nil
+}
+
+// GetRights returns user right for todo_list
+func (d *DB) GetRights(ctx context.Context, todoListID, userID string) (user.Rights, error) {
+	var right string
+	if err := d.conn.GetContext(ctx, &right, `
+	SELECT rights
+	FROM user_rights
+	WHERE todo_lists_id = $1 AND users_id = $2 
+	`, todoListID, userID); err != nil {
+		return user.Rights{}, fmt.Errorf("get user rights: %w", err)
+	}
+
+	return user.Rights{}, nil // TODO:
+}
+
+// AvailableTodoLists returns available todo lists for user
+func (d *DB) AvailableTodoLists(ctx context.Context, userID string) ([]TodoList, error) {
+	var tl []TodoList
+	if err := d.conn.Select(&tl, `
+	SELECT tl.id, tl.title, tl.created_at, tl.created_by
+	FROM todo_lists tl
+	INNER JOIN user_rights ur ON  tl.created_by = ur.users_id 
+		AND tl.id = ur.todo_lists_id
+	WHERE tl.created_by = $1
+	`, userID); err != nil {
+		return nil, fmt.Errorf("get todo lists: %w", err)
+	}
+
+	return tl, nil
+}
+
+func (d *DB) GetTodoListTodo(context.Context, string) ([]Todo, error) {
+	return nil, fmt.Errorf("not impemented")
 }

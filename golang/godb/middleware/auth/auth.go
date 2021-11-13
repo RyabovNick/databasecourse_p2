@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
@@ -22,28 +21,33 @@ func Auth() func(next http.Handler) http.Handler {
 
 			if len(s) != 2 {
 				log.Default().Println("split")
-				next.ServeHTTP(w, r) // TODO: not use middleware for auth & signup
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
-			// TODO: decode and validate key
-			b, err := jwt.Parse(s[1], func(t *jwt.Token) (interface{}, error) {
-				// TODO: https://pkg.go.dev/github.com/golang-jwt/jwt#example-Parse-Hmac
-				return nil, nil
+			token, err := jwt.ParseWithClaims(s[1], &user.WithClaims{}, func(t *jwt.Token) (interface{}, error) {
+				return user.AuthToken, nil
 			})
 			if err != nil {
-				// TODO
-				log.Default().Println("decode", err)
+				log.Default().Println("token parse", err)
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
-			var user user.User
-			if err := json.Unmarshal([]byte(b.Raw), &user); err != nil {
-				log.Default().Println("unmarshal", err)
+			if !token.Valid {
+				log.Default().Println("not valid token")
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
-			r.WithContext(context.WithValue(r.Context(), "id", user.ID))
+			claims, ok := token.Claims.(*user.WithClaims)
+			if !ok {
+				log.Default().Println("claims", ok)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			r = r.WithContext(context.WithValue(r.Context(), user.CtxKey(), claims.ToUser()))
 			next.ServeHTTP(w, r)
 		})
 	}

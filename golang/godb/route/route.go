@@ -23,6 +23,7 @@ type DBInterface interface {
 	GetRights(context.Context, string, string) (user.Rights, error)
 	AvailableTodoLists(context.Context, string) ([]db.TodoList, error)
 	GetTodoListTodo(context.Context, string) ([]db.Todo, error)
+	CreateRights(context.Context, db.UserRights) error
 }
 
 type Route struct {
@@ -144,8 +145,8 @@ func NewRouter(ro Route) *chi.Mux {
 				return
 			}
 
-			if ok := user.CheckRight(user.Write, has); !ok {
-				errors.Error(rw, err.Error(), http.StatusForbidden)
+			if ok := user.CheckRight(user.Read, has); !ok {
+				errors.Error(rw, "Access Forbidden", http.StatusForbidden)
 				return
 			}
 
@@ -164,6 +165,36 @@ func NewRouter(ro Route) *chi.Mux {
 
 			rw.Header().Set("Content-Type", "application/json")
 			rw.Write(res)
+		})
+
+		rout.Post("/user_rights", func(rw http.ResponseWriter, r *http.Request) {
+			defer r.Body.Close()
+
+			var userRights db.UserRights
+			if err := UnmarshalBody(r.Body, &userRights); err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			us := user.FromCtx(r.Context())
+
+			rights, err := ro.DB.GetRights(r.Context(), userRights.TodoListsID, us.ID)
+			if err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if ok := user.CanGiveRights(rights, userRights.Rights); !ok {
+				errors.Error(rw, "No rights", http.StatusForbidden)
+				return
+			}
+
+			if err := ro.DB.CreateRights(r.Context(), userRights); err != nil {
+				errors.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			rw.WriteHeader(http.StatusOK)
 		})
 	})
 

@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"github.com/RyabovNick/databasecourse_2/golang/godb/models/user"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -33,9 +36,48 @@ func NewDB() (*DB, error) {
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(3)
 
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
+		DatabaseName: "zhavoronok",
+		SchemaName:   "public",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("migrate instance: %w", err)
+	}
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"zhavoronok", driver)
+	if err != nil {
+		return nil, fmt.Errorf("migrate: %w", err)
+	}
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return nil, fmt.Errorf("migrate up: %w", err)
+	}
+
 	return &DB{
 		conn: db,
 	}, nil
+}
+
+func (d *DB) InTx(ctx context.Context, isolation sql.IsolationLevel, f func(tx sqlx.Tx) error) error {
+	tx, err := d.conn.BeginTxx(ctx, &sql.TxOptions{
+		Isolation: isolation,
+	})
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+
+	if err := f(*tx); err != nil {
+		if errRoll := tx.Rollback(); errRoll != nil {
+			return fmt.Errorf("rollback tx: %v (error: %w)", errRoll, err)
+		}
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+
+	return nil
 }
 
 func (d *DB) CreateUser(ctx context.Context, u user.User) (user.User, error) {
@@ -96,46 +138,36 @@ type Todo struct {
 	CreatedBy   string    `db:"created_by" json:"created_by"`
 	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
 	UpdatedBy   string    `db:"updated_by" json:"updated_by"`
-	DeletedAt   time.Time `db:"deleted_at" json:"deleted_at"`
+	// DeletedAt   time.Time `db:"deleted_at" json:"deleted_at"`
 }
 
 type UserRights struct {
-	UsersID     string `db:"users_id" json:"users_id"`
-	TodoListsID string `db:"todo_lists_id" json:"todo_lists_id"`
-	Rights      string `db:"rights" json:"rights"`
+	UsersID     string      `db:"users_id" json:"users_id"`
+	TodoListsID string      `db:"todo_lists_id" json:"todo_lists_id"`
+	Rights      user.Rights `db:"rights" json:"rights"`
 }
 
 // CreateTodoList creates todo list and sets rights as owner
 func (d *DB) CreateTodoList(ctx context.Context, t TodoList, u user.User) (TodoList, error) {
-	tx, err := d.conn.BeginTxx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-	})
-	if err != nil {
-		return TodoList{}, fmt.Errorf("tx: %w", err)
-	}
-
 	var todoList TodoList
-	if err := tx.Get(&todoList, `
-	INSERT INTO todo_lists (title, created_by)
-	VALUES ($1, $2)
-	RETURNING id, title, created_at, created_by`, t.Title, u.ID); err != nil {
-		if err := tx.Rollback(); err != nil {
-			return TodoList{}, fmt.Errorf("rollback: %w", err)
-		}
-		return TodoList{}, fmt.Errorf("insert todo_lists: %w", err)
-	}
 
-	if _, err := tx.Exec(`INSERT INTO user_rights 
-	(users_id, todo_lists_id, rights)
-	VALUES ($1, $2, $3)`, u.ID, todoList.ID, user.Owner.Name); err != nil {
-		if err := tx.Rollback(); err != nil {
-			return TodoList{}, fmt.Errorf("rollback: %w", err)
+	if err := d.InTx(ctx, sql.LevelReadCommitted, func(tx sqlx.Tx) error {
+		if err := tx.Get(&todoList, `
+		INSERT INTO todo_lists (title, created_by)
+		VALUES ($1, $2)
+		RETURNING id, title, created_at, created_by`, t.Title, u.ID); err != nil {
+			return fmt.Errorf("insert todo_lists: %w", err)
 		}
-		return TodoList{}, fmt.Errorf("insert user_rights: %w", err)
-	}
 
-	if err := tx.Commit(); err != nil {
-		return TodoList{}, fmt.Errorf("commit: %w", err)
+		if _, err := tx.Exec(`INSERT INTO user_rights 
+		(users_id, todo_lists_id, rights)
+		VALUES ($1, $2, $3)`, u.ID, todoList.ID, user.Owner); err != nil {
+			return fmt.Errorf("insert user_rights: %w", err)
+		}
+
+		return nil
+	}); err != nil {
+		return TodoList{}, err
 	}
 
 	return todoList, nil
@@ -143,22 +175,26 @@ func (d *DB) CreateTodoList(ctx context.Context, t TodoList, u user.User) (TodoL
 
 // GetRights returns user right for todo_list
 func (d *DB) GetRights(ctx context.Context, todoListID, userID string) (user.Rights, error) {
-	var right string
+	var right int
 	if err := d.conn.GetContext(ctx, &right, `
 	SELECT rights
 	FROM user_rights
 	WHERE todo_lists_id = $1 AND users_id = $2 
 	`, todoListID, userID); err != nil {
-		return user.Rights{}, fmt.Errorf("get user rights: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return user.NoRights, nil
+		}
+
+		return user.NoRights, fmt.Errorf("get user rights: %w", err)
 	}
 
-	return user.Rights{}, nil // TODO:
+	return user.IntToRights(right), nil
 }
 
 // AvailableTodoLists returns available todo lists for user
 func (d *DB) AvailableTodoLists(ctx context.Context, userID string) ([]TodoList, error) {
 	var tl []TodoList
-	if err := d.conn.Select(&tl, `
+	if err := d.conn.SelectContext(ctx, &tl, `
 	SELECT tl.id, tl.title, tl.created_at, tl.created_by
 	FROM todo_lists tl
 	INNER JOIN user_rights ur ON  tl.created_by = ur.users_id 
@@ -171,6 +207,28 @@ func (d *DB) AvailableTodoLists(ctx context.Context, userID string) ([]TodoList,
 	return tl, nil
 }
 
-func (d *DB) GetTodoListTodo(context.Context, string) ([]Todo, error) {
-	return nil, fmt.Errorf("not impemented")
+func (d *DB) GetTodoListTodo(ctx context.Context, todoListID string) ([]Todo, error) {
+	var td []Todo
+	if err := d.conn.SelectContext(ctx, &td, `
+	SELECT id, title, description, checked, 
+		todo_lists_id, created_at, created_by, 
+		updated_at, updated_by
+	FROM todos
+	WHERE todo_lists_id = $1
+	`, todoListID); err != nil {
+		return nil, fmt.Errorf("get todo: %w", err)
+	}
+
+	return td, nil
+}
+
+func (d *DB) CreateRights(ctx context.Context, rights UserRights) error {
+	if _, err := d.conn.ExecContext(ctx, `
+	INSERT INTO user_rights (users_id, todo_lists_id, rights)
+	VALUES ($1, $2, $3)`,
+		rights.UsersID, rights.TodoListsID, rights.Rights); err != nil {
+		return fmt.Errorf("create user rights: %w", err)
+	}
+
+	return nil
 }

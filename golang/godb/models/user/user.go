@@ -9,24 +9,53 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-type Rights struct {
-	ID   int
-	Name string
-}
+type Rights int
 
 var (
-	Read       = Rights{1, "r"}
-	Write      = Rights{2, "w"}
-	AdminRead  = Rights{3, "ar"}
-	AdminWrite = Rights{4, "aw"}
-	Owner      = Rights{5, "o"}
-	AuthToken  = []byte("secretKey")
+	NoRights   Rights = 0
+	Read       Rights = 1 // Только чтение
+	Write      Rights = 2 // Чтение и запись
+	AdminRead  Rights = 3 // Чтение, запись и возможность дать права на чтение
+	AdminWrite Rights = 4 // Чтение, запись и возможность дать права на чтение и запись
+	Owner      Rights = 5 // Любые действия
+	AuthToken         = []byte("secretKey")
 )
 
-func CheckRight(atleastHas Rights, has Rights) bool {
-	// TODO
+func IntToRights(v int) Rights {
+	switch v {
+	case 1:
+		return Read
+	case 2:
+		return Write
+	case 3:
+		return AdminRead
+	case 4:
+		return AdminWrite
+	case 5:
+		return Owner
+	}
 
-	return true
+	return NoRights
+}
+
+func CheckRight(atleastHas Rights, has Rights) bool {
+	return has >= atleastHas
+}
+
+func CanGiveRights(with Rights, give Rights) bool {
+	if with == Owner {
+		return true
+	}
+
+	if with == AdminWrite && (give == Read || give == Write) {
+		return true
+	}
+
+	if with == AdminRead && give == Read {
+		return true
+	}
+
+	return false
 }
 
 type User struct {

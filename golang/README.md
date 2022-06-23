@@ -7,39 +7,56 @@
 ```json
 {
 	"settings": {
+		"go.delveConfig": {
+			"debugAdapter": "dlv-dap"
+		},
 		"go.lintOnSave": "package",
 		"go.vetOnSave": "package",
 		"go.useLanguageServer": true,
 		"go.lintTool": "golangci-lint",
 		"go.lintFlags": [
+			"--fast",
 			"--print-issued-lines=false",
-			"--no-config",
 			"--disable-all",
-			"--enable=govet",
-			"--enable=stylecheck",
-			"--enable=staticcheck",
-			"--enable=dupl",
-			"--enable=unconvert",
-			"--enable=ineffassign",
-			"--enable=goconst",
-			"--enable=gosec",
-			"--enable=unparam",
-			"--enable=interfacer",
-			"--enable=gocyclo",
-			"--enable=errcheck",
 			"--enable=deadcode",
-			"--enable=varcheck",
+			"--enable=errcheck",
 			"--enable=gosimple",
+			"--enable=govet",
+			"--enable=ineffassign",
+			"--enable=staticcheck",
 			"--enable=structcheck",
+			"--enable=stylecheck",
 			"--enable=typecheck",
 			"--enable=unused",
+			"--enable=varcheck",
+			"--enable=bodyclose",
+			"--enable=contextcheck",
+			"--enable=decorder",
+			"--enable=dupl",
+			"--enable=durationcheck",
+			"--enable=errchkjson",
+			"--enable=errname",
+			"--enable=exportloopref",
+			"--enable=goconst",
+			"--enable=gocritic",
+			"--enable=gocyclo",
+			"--enable=gosec",
 			"--enable=misspell",
-			"--enable=golint"
+			"--enable=revive",
+			"--enable=rowserrcheck",
+			"--enable=sqlclosecheck",
+			"--enable=unconvert",
+			"--enable=unparam",
+			"--enable=gas",
 		],
-		"files.eol": "\n"
+		"files.eol": "\n",
+		"makefile.extensionOutputFolder": "./.vscode"
 	},
 	"extensions": {
-		"recommendations": ["golang.go", "zxh404.vscode-proto3"]
+		"recommendations": [
+			"golang.go",
+			"zxh404.vscode-proto3"
+		]
 	}
 }
 ```

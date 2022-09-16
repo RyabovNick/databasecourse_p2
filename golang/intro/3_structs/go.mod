@@ -1,4 +1,4 @@
-module github.com/RyabovNick/databasecourse_2/golang/intro/c.structs
+module github.com/RyabovNick/databasecourse_2/golang/intro/3_structs
 
 go 1.17
 

@@ -1,0 +1,10 @@
+go 1.17
+
+use (
+	./godb
+	./intro/3_structs
+	./intro/4_for
+	./intro/5_di
+	./intro/6_sql
+	./intro/7_concurrency
+)

@@ -1,4 +1,4 @@
-module github.com/RyabovNick/databasecourse_2/golang/intro/d.di
+module github.com/RyabovNick/databasecourse_2/golang/intro/5_di
 
 go 1.17
 

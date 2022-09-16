@@ -1,4 +1,4 @@
-module github.com/RyabovNick/databasecourse_2/golang/intro/e.sql
+module github.com/RyabovNick/databasecourse_2/golang/intro/6_sql
 
 go 1.17
 

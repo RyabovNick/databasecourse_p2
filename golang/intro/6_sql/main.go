@@ -17,8 +17,7 @@ func main() {
 	ctxwt, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// urlExample := "postgres://username:password@localhost:5432/database_name"
-	connUri := "postgres://kalmykova@95.217.232.188:7777/kalmykova"
+	connUri := "postgres://username:password@localhost:5432/database_name"
 	conn, err := pgx.Connect(ctxwt, connUri)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)

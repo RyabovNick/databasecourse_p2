@@ -1,19 +1,19 @@
 {
 	"folders": [
 		{
-			"path": "a.hello_world"
+			"path": "1_hello_world"
 		},
 		{
-			"path": "b.type"
+			"path": "2_type"
 		},
 		{
-			"path": "c.structs"
+			"path": "3_structs"
 		},
 		{
-			"path": "d.di"
+			"path": "5_di"
 		},
 		{
-			"path": "e.sql"
+			"path": "6_sql"
 		}
 	],
 	"settings": {

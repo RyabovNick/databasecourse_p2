@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main() {
 	// Подробнее о типах данных в Go
@@ -49,6 +51,7 @@ func main() {
 	fmt.Println(str.C == nil)
 	fmt.Println(str.D)
 	fmt.Println(str.E)
+	// fmt.Println(str.E.A)
 
 	// Обратите внимание на работу с указателями
 	// E является указателем на тип T
@@ -107,6 +110,9 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
+	sl := make([]string, 0, 10)
+	sl = append(sl, "10")
 }
 
 type M struct {

@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
-func Greet(writer io.Writer, name string) {
-	fmt.Fprintf(writer, "Hello, %s", name)
+func Greet(w io.Writer, name string) {
+	fmt.Fprintf(w, "Hello, %s", name)
 }
 
 func GreetHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,6 +16,6 @@ func GreetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Greet(os.Stdout, "Jack")
+	Greet(os.Stdout, "Jack")
 	http.ListenAndServe(":8080", http.HandlerFunc(GreetHandler))
 }

@@ -7,4 +7,5 @@ use (
 	./intro/5_di
 	./intro/6_sql
 	./intro/7_concurrency
+	./tasks/people_service
 )

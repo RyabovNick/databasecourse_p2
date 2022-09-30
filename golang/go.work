@@ -8,4 +8,5 @@ use (
 	./intro/6_sql
 	./intro/7_concurrency
 	./tasks/people_service
+	./tasks/console_game
 )

@@ -1,6 +1,10 @@
 package main
 
-import "math"
+import (
+	"math"
+
+	"github.com/RyabovNick/databasecourse_2/golang/intro/3_structs/creature"
+)
 
 type Rectangle struct {
 	Width  float64
@@ -25,4 +29,9 @@ func (r Rectangle) Area() float64 {
 
 func (c Circle) Area() float64 {
 	return math.Pi * c.Radius * c.Radius
+}
+
+func main() {
+	cr := creature.New()
+	cr.Eat()
 }

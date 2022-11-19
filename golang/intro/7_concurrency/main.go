@@ -1,41 +1,32 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"net"
-	"sync"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/RyabovNick/databasecourse_2/golang/intro/7_concurrency/scan/chansync"
 )
 
-func worker(ports chan int, wg *sync.WaitGroup) {
-	for p := range ports {
-		conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", "127.0.0.1", p))
-		if err != nil {
-			// fmt.Println("port closed:", p)
-			wg.Done()
-			continue
-		}
-		conn.Close()
-
-		fmt.Println("port opened:", p)
-
-		wg.Done()
-	}
-}
-
 func main() {
-	ports := make(chan int, 200)
-	wg := sync.WaitGroup{}
+	ctx, cancel := context.WithCancel(context.Background())
 
-	for i := 0; i < cap(ports); i++ {
-		go worker(ports, &wg)
-	}
+	go func() {
+		shutdown := make(chan os.Signal, 1)
+		signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	for i := 1; i < 10000; i++ {
-		wg.Add(1)
-		ports <- i
-	}
+		<-shutdown
+		cancel()
 
-	wg.Wait()
-	close(ports) // канал закрывает обязательно тот, кто в него пишет
-	// иначе возможна паника
+		time.Sleep(10 * time.Second) // TODO: chansync
+
+		os.Exit(0)
+	}()
+
+	ps := chansync.New("127.0.0.1", 100, 10)
+	port := ps.Scan(ctx)
+	fmt.Println("open ports:", port)
 }

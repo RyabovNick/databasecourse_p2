@@ -1,0 +1,51 @@
+version: '2.4'
+services:
+  postgres:
+    image: postgres:15.1
+    # profiles:
+    #   - "db"
+    container_name: simplehttp-postgres
+    volumes:
+      - simplehttp:/val/lib/postgresql/data
+
+    ports:
+    - 6432:5432
+
+    logging:
+      driver: json-file
+      options:
+        max-size: '100m'
+        max-file: '5'
+
+    environment:
+      - POSTGRES_DB=test
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=pass
+
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U postgres' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  simplehttp:
+    build:
+      context: .
+
+    image: simplehttp:latest
+    # profiles:
+    #   - "app"
+    container_name: simplehttp
+    hostname: simplehttp
+
+    ports:
+      - 8081:8081
+    
+    logging:
+      driver: json-file
+      options:
+        max-size: '100m'
+        max-file: '5'
+
+volumes:
+  simplehttp:

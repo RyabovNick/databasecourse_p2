@@ -7,6 +7,7 @@ use (
 	./intro/5_di
 	./intro/6_sql
 	./intro/7_concurrency
+	./intro/8_docker
 	./tasks/people_service
 	./tasks/console_game
 )

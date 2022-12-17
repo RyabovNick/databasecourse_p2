@@ -33,6 +33,6 @@ func (s *Store) ListPeople() ([]People, error) {
 	return nil, nil
 }
 
-func (s *Store) GetPeopleByID(id string) (People, error) {
+func (s *Store) GetPeopleByID(id int) (People, error) {
 	return People{}, nil
 }
